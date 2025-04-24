@@ -13,11 +13,11 @@ DEFAULT_PDF_PATH = "data/policies_kb.pdf"
 # Load embedding model
 embedding_function = HuggingFaceEmbeddings()
 
-# Global variable for database to avoid reloading
+
 db = None
 
 def extract_text_pypdf2(pdf_path):
-    """Extract text using PyPDF2."""
+   
     try:
         text = ""
         with open(pdf_path, "rb") as file:
@@ -32,7 +32,7 @@ def extract_text_pypdf2(pdf_path):
         raise
 
 def process_and_store_pdf():
-    """Extract, chunk, and embed PDF content into Chroma."""
+ 
     try:
         print(f"Processing PDF: {DEFAULT_PDF_PATH}")
         text = extract_text_pypdf2(DEFAULT_PDF_PATH)
@@ -54,21 +54,21 @@ def process_and_store_pdf():
         raise
 
 def ask_pdf_question(query):
-    """Answer a question based on embedded PDF content."""
+   
     try:
         print("Retrieving relevant chunks...")
         results = db.similarity_search_with_score(query, k=5)
 
         if not results or all(score > 0.8 for _, score in results):
             log_escalated_query(query)
-            return "⚠️ I’m not confident in answering this. Please contact our insurance advisor at support@insureai.com."
+            return "⚠️ I'm not confident in answering this. Please contact our insurance advisor at support@insureai.com."
 
         context = "\n\n---\n\n".join([doc[0].page_content for doc in results])
 
         prompt = f"Context:\n{context}\n\nUser: {query}\nAI:"
         print("Querying Ollama...")
 
-        # Optional: Add timeout here if needed
+       
         response = ollama.chat(model="mistral", messages=[{"role": "user", "content": prompt}])
         answer = response.get("message", {}).get("content", "").strip()
 
@@ -86,7 +86,7 @@ def ask_pdf_question(query):
         return f"⚠️ Error generating response: {str(e)}"
 
 def log_escalated_query(query):
-    """Log queries that the model couldn't answer well."""
+   
     try:
         with open("escalated_queries.txt", "a") as f:
             f.write(query + "\n")
@@ -94,19 +94,19 @@ def log_escalated_query(query):
     except Exception as e:
         print(f"Error logging query: {str(e)}")
 
-# Startup processing
+
 print("Initializing and processing internal PDF...")
 db = process_and_store_pdf()
 
 # Gradio UI
 with gr.Blocks() as app:
-    gr.Markdown("## 🧠 Chat with Internal Insurance PDF\n_Type your question below and get AI-powered answers based on company policies._")
+    gr.Markdown("##  Chat with Insurance policy agent\n_Type your question below and get AI-powered answers based on insurance policies._")
 
     with gr.Row():
         query_input = gr.Textbox(label="Ask a Question", placeholder="e.g., What is the claim process for theft?")
         query_button = gr.Button("Get Answer")
 
-    output_text = gr.Textbox(label="AI Response", lines=5)
+    output_text = gr.Textbox(label="Agent's Response", lines=5)
 
     query_button.click(fn=ask_pdf_question, inputs=query_input, outputs=output_text)
 
